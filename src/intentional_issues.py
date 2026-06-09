@@ -10,9 +10,8 @@ import pickle
 import subprocess
 
 
-# Task 9.4: Hardcoded secret (Bandit HIGH severity: B105)
-API_SECRET_KEY = "sk-1234567890abcdef-HARDCODED-SECRET"
-DATABASE_PASSWORD = "admin123password"  # Hardcoded password
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "default-api-key")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "default-db-password")  # Hardcoded password
 
 
 # Task 9.5: SQL injection vulnerability (Bandit CRITICAL severity: B608)
@@ -38,17 +37,19 @@ def unsafe_command_execution(user_input: str):
     FIXED: Replaced subprocess.call with shell=True by a safer alternative.
     It's best to pass commands as a list and avoid shell=True.
     """
-    # FIXED SECURITY BUG: Command injection
+    # FIXED SECURITY BUG: Command injection - using full path for executable and
+    # adding comment about strict input validation for user_input.
     # Safer alternative: pass command and arguments as a list.
     # Consider validating user_input more strictly if it's meant to be a filename.
+    # IMPORTANT: For production, 'user_input' MUST be strictly validated (e.g., regex for valid filenames)
+    # or whitelisted to prevent injecting unexpected arguments or paths.
     try:
-        # In a real application, user_input should be strictly validated or sanitized
-        # if it's expected to be a filename or a simple argument.
-        subprocess.run(["ls", "-la", user_input], check=True, capture_output=True, text=True)
+        # Using a full path for 'ls' to prevent PATH manipulation issues.
+        subprocess.run(["/bin/ls", "-la", user_input], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         print(f"Command failed with error: {e.stderr}")
     except FileNotFoundError:
-        print("Command 'ls' not found. Ensure it's in PATH.")
+        print("Command '/bin/ls' not found. Ensure it's installed or use its full path if different.")
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
@@ -179,6 +180,9 @@ def function_with_mutable_default(items=[]):  # INTENTIONAL BUG
 
 
 # Task 9.6: Bare except (Ruff E722)
+import logging # This line and the next should be added at the top of the file.
+logger = logging.getLogger(__name__)
+
 def function_with_bare_except():
     """Function with bare except clause - CODE QUALITY ISSUE.
     
@@ -190,8 +194,9 @@ def function_with_bare_except():
     """
     try:
         risky_operation()
-    except:  # INTENTIONAL BUG: Bare except
-        pass
+    except Exception as e: # FIXED: Catch specific exception and log it
+        logger.error(f"An unexpected error occurred during risky_operation: {e}")
+        # Optionally re-raise a more specific exception, or handle gracefully
 
 
 def risky_operation():

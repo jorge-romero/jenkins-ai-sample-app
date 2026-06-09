@@ -1,6 +1,6 @@
 """Sample FastAPI application with intentional bugs for demonstration."""
 from fastapi import FastAPI, HTTPException
-from typing import Optional
+# Removed unused import: from typing import Optional
 from .database import UserDatabase
 from .auth import AuthService
 from .calculator import Calculator
