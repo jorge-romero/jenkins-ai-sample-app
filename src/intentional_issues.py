@@ -11,7 +11,7 @@ import subprocess
 
 
 API_SECRET_KEY = os.getenv("API_SECRET_KEY", "default-api-key")
-DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "default-db-password")  # Hardcoded password
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")  # Remove default for sensitive secret to enforce environment configuration
 
 
 # Task 9.5: SQL injection vulnerability (Bandit CRITICAL severity: B608)
@@ -41,8 +41,13 @@ def unsafe_command_execution(user_input: str):
     # adding comment about strict input validation for user_input.
     # Safer alternative: pass command and arguments as a list.
     # Consider validating user_input more strictly if it's meant to be a filename.
-    # IMPORTANT: For production, 'user_input' MUST be strictly validated (e.g., regex for valid filenames)
-    # or whitelisted to prevent injecting unexpected arguments or paths.
+    # FIXED SECURITY BUG: Command injection - ensuring strict validation of user_input.
+    # Only allow simple filenames or paths that do not start with a hyphen or contain dangerous characters.
+    import re
+    if not re.match(r"^[a-zA-Z0-9_./-]+$", user_input) or user_input.startswith('-'):
+        print(f"Invalid or potentially malicious input: {user_input}")
+        return
+    
     try:
         # Using a full path for 'ls' to prevent PATH manipulation issues.
         subprocess.run(["/bin/ls", "-la", user_input], check=True, capture_output=True, text=True)
@@ -61,8 +66,14 @@ def unsafe_deserialization(data: bytes):
     Expected behavior: Quality AI Agent should detect unsafe deserialization
     and propose safer alternatives like JSON.
     """
-    # INTENTIONAL SECURITY BUG: Unsafe deserialization
-    return pickle.loads(data)
+    # FIXED SECURITY BUG: Unsafe deserialization - using JSON as a safer alternative.
+    # This requires the input `data` to be JSON-encoded bytes. Error handling is crucial.
+    try:
+        return json.loads(data.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        # Log the error and handle appropriately (e.g., raise a custom exception, return default)
+        print(f"Error deserializing data with JSON: {e}")
+        raise ValueError("Invalid JSON data provided") from e
 
 
 # Task 9.4: Use of weak cryptography (Bandit MEDIUM severity: B324)
@@ -104,8 +115,9 @@ def function_with_undefined_name():
     Expected behavior: Quality AI Agent should detect undefined name
     and propose defining it or fixing the reference.
     """
-    # INTENTIONAL QUALITY BUG: Undefined name
-    result = undefined_variable + 10  # undefined_variable is not defined
+    # FIXED QUALITY BUG: Undefined name - defined variable before use
+    undefined_variable = 0  # Placeholder definition, adjust based on actual intent
+    result = undefined_variable + 10
     return result
 
 

@@ -7,10 +7,7 @@ def process_data(a, b, c, d, e, f):
     BUG #3: High complexity, too many parameters, unused variables
     This function has OBVIOUS code quality issues.
     """
-    # OBVIOUS BUG: Unused variable!
-    unused_variable = "This is never used anywhere"
-    temp_var = None
-    another_unused = 42
+    # FIXED QUALITY BUG: Removed unused variables
     
     # OBVIOUS BUG: Deep nesting and high cyclomatic complexity!
     if a > 0:
