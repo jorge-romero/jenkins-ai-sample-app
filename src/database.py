@@ -36,8 +36,8 @@ class UserDatabase:
         This uses string formatting instead of parameterized queries!
         """
         # VULNERABLE CODE - DO NOT USE IN PRODUCTION!
-        query = f"SELECT * FROM users WHERE id = {user_id}"
-        cursor = self.conn.execute(query)
+        query = "SELECT * FROM users WHERE id = ?"
+        cursor = self.conn.execute(query, (user_id,))
         row = cursor.fetchone()
         
         if row:

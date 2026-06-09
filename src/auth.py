@@ -1,14 +1,17 @@
 """Authentication service with hardcoded secrets (BUG #2)."""
 
 
+import os
+
+
 class AuthService:
     """Authentication service with OBVIOUS hardcoded secrets."""
     
     # BUG #2: HARDCODED SECRETS - CRITICAL SECURITY ISSUE!
     # These should be environment variables!
-    API_KEY = "AIzaSyDemoKey12345_THIS_IS_HARDCODED"
-    SECRET_TOKEN = "super-secret-token-123-hardcoded"
-    DATABASE_PASSWORD = "admin123password"
+    API_KEY = os.getenv("API_KEY", "default_api_key")
+    SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default_secret_token")
+    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "default_db_password")
     
     def authenticate(self, token: str) -> bool:
         """Authenticate a user token.
