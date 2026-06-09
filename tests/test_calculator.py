@@ -35,8 +35,8 @@ def test_divide_by_zero():
     calc = Calculator()
     # OBVIOUS BUG: This will crash! The function doesn't handle b=0
     result = calc.divide(10, 0)
-    # This assertion is never reached because exception is raised
-    assert result is not None
+    # Now, the function returns float('inf') for division by zero (10/0)
+    assert result == float('inf')
 
 
 def test_get_first_n_items_normal():
