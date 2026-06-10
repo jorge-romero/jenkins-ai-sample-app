@@ -11,23 +11,25 @@ import subprocess
 
 
 # Task 9.4: Hardcoded secret (Bandit HIGH severity: B105)
-API_SECRET_KEY = "sk-1234567890abcdef-HARDCODED-SECRET"
-DATABASE_PASSWORD = "admin123password"  # Hardcoded password
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "default_api_secret_key")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "default_db_password") # FIX: Use environment variables for secrets
 
 
 # Task 9.5: SQL injection vulnerability (Bandit CRITICAL severity: B608)
-def unsafe_sql_query(user_input: str) -> str:
-    """Execute SQL query with user input - SQL INJECTION VULNERABILITY.
+def unsafe_sql_query(user_input: str) -> tuple[str, tuple]:
+    """Return a parameterized SQL query pattern and parameters to prevent SQL INJECTION.
     
-    This function demonstrates a SQL injection vulnerability that Bandit
-    should detect as CRITICAL severity.
+    This function demonstrates how to construct a parameterized query.
+    The caller should execute this using a database API's execute method with the returned parameters.
     
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose parameterized queries.
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    return query
+    # FIX: Return a parameterized query pattern to prevent SQL injection.
+    # The caller would then execute this using a database API's execute method.
+    query_template = "SELECT * FROM users WHERE username = ?"
+    params = (user_input,)
+    return (query_template, params)
 
 
 # Task 9.5: Command injection vulnerability (Bandit HIGH severity: B602, B607)
@@ -40,8 +42,11 @@ def unsafe_command_execution(user_input: str):
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose safer alternatives.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # FIX: Avoid command injection by not using shell=True and passing arguments safely
+    # For this specific case, 'ls -la' is a fixed command, and user_input is an argument.
+    # In a real-world scenario, robust input validation and whitelisting of commands
+    # would be necessary if arbitrary command execution is required (which is rare and dangerous).
+    subprocess.call(["ls", "-la", user_input])
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
