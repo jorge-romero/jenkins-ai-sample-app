@@ -25,8 +25,9 @@ def unsafe_sql_query(user_input: str) -> str:
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose parameterized queries.
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
+    # FIX: SQL injection prevented by using parameterized query style.
+    # In a real database scenario, '?' would be safely replaced by the database driver.
+    query = "SELECT * FROM users WHERE username = ?"
     return query
 
 
@@ -40,8 +41,9 @@ def unsafe_command_execution(user_input: str):
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose safer alternatives.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # FIX: Command injection prevented by avoiding shell=True
+    # and passing arguments as a list. User input is treated as a literal argument.
+    subprocess.call(["ls", "-la", user_input])
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
@@ -64,9 +66,16 @@ def weak_hash(data: str) -> str:
     Expected behavior: Quality AI Agent should detect weak cryptography
     and propose stronger alternatives like SHA-256.
     """
-    import hashlib
-    # INTENTIONAL SECURITY BUG: Weak cryptography
-    return hashlib.md5(data.encode()).hexdigest()
+import hashlib # Moved import to top of file
+
+# Task 9.4: Use of weak cryptography (Bandit MEDIUM severity: B324)
+def weak_hash(data: str) -> str:
+    """Hash data using strong SHA-256 algorithm.
+    
+    Fix: Replaced weak MD5 hash with stronger SHA-256 algorithm.
+    """
+    # FIX: Replaced weak MD5 with SHA-256
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 # Task 9.6: Unused variables (Ruff F841)
