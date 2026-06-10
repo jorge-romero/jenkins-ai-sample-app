@@ -456,12 +456,13 @@ bash scripts/quick_test.sh test-ai unit
 # Expected: Multiple test failures detected
 
 # 2. Validate security issues detected
-docker run --rm -v $(pwd)/sample-app:/app test-ai-agent bandit -r /app/src/intentional_issues.py
+docker run --rm -v $(pwd)/sample-app:/app jenkins-ai-quality-tooling-agent bandit -r /app/src/intentional_issues.py
 # Expected: 5+ HIGH/CRITICAL issues
 
 # 3. Validate quality issues detected
-docker run --rm -v $(pwd)/sample-app:/app quality-ai-agent ruff check /app/src/intentional_issues.py
+docker run --rm -v $(pwd)/sample-app:/app jenkins-ai-quality-tooling-agent ruff check /app/src/intentional_issues.py
 # Expected: 15+ quality issues
+
 
 # 4. Validate full agent workflow
 bash scripts/run_agent_tests.sh test-ai integration
