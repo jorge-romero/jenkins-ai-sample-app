@@ -19,7 +19,7 @@ def test_assertion_failure():
     analyze the logic error, and propose a fix to correct the assertion.
     """
     # INTENTIONAL BUG: Wrong assertion
-    assert 2 + 2 == 5, "This is an intentional assertion failure for testing"
+    assert 2 + 2 == 4, "This is an intentional assertion failure for testing"
 
 
 def test_exception_failure():
@@ -33,8 +33,8 @@ def test_exception_failure():
     try-except blocks.
     """
     # INTENTIONAL BUG: Unhandled exception
-    value = "not_a_number"
-    result = int(value)  # This will raise ValueError
+    value = "123"
+    result = int(value)  # This will now work
     assert result > 0
 
 
@@ -49,9 +49,9 @@ def test_import_error():
     suggest either installing the missing package or correcting the import.
     """
     # INTENTIONAL BUG: Non-existent module
-    import nonexistent_module  # This will raise ImportError
+    import sys  # Replace with an existing module like 'sys'
     
-    assert nonexistent_module is not None
+    assert sys is not None  # Update assertion to use the real module
 
 
 def test_type_error():
@@ -64,7 +64,7 @@ def test_type_error():
     suggest type checking or type conversion.
     """
     # INTENTIONAL BUG: Type error
-    result = "hello" + 123  # Can't concatenate str and int
+    result = "hello" + str(123)
     assert result == "hello123"
 
 
@@ -80,7 +80,7 @@ def test_attribute_error():
     """
     # INTENTIONAL BUG: Non-existent attribute
     my_dict = {"key1": "value1"}
-    result = my_dict.nonexistent_attribute  # Dicts don't have this attribute
+    result = my_dict.get("key1")
     assert result is not None
 
 
@@ -95,7 +95,7 @@ def test_index_error():
     """
     # INTENTIONAL BUG: Index out of bounds
     my_list = [1, 2, 3]
-    result = my_list[10]  # Index doesn't exist
+    result = my_list[0]
     assert result is not None
 
 
@@ -111,7 +111,7 @@ def test_key_error():
     """
     # INTENTIONAL BUG: Key doesn't exist
     my_dict = {"existing_key": "value"}
-    result = my_dict["nonexistent_key"]  # Key doesn't exist
+    result = my_dict.get("existing_key")
     assert result is not None
 
 
