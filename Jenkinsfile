@@ -1,74 +1,139 @@
 pipeline {
-    agent none
+    // Single agent for whole pipeline to guarantee same node + same workspace across stages.
+    agent { label 'quality-tooling-agent' }
 
-    environment {
-        GEMINI_API_KEY = credentials('gemini-api-key')
+        environment {
+        APP_DIR = '.'
+        REPORTS_DIR = 'reports'
         GITHUB_TOKEN = credentials('github-token')
     }
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     stages {
-        stage('Checkout') {
-            agent { label 'build-agent' }
+        stage('Checkout Shared Workspace') {
             steps {
-                echo '📦 Checking out code...'
+                deleteDir()
                 checkout scm
+                dir("${APP_DIR}") {
+                    sh 'mkdir -p ${REPORTS_DIR}'
+                }
             }
         }
 
-        stage('Build') {
-            agent { label 'build-agent' }
+        stage('Python Build + Test + Build Report') {
             steps {
-                echo '🔨 Installing dependencies...'
-                sh '''
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install -r requirements-dev.txt
-                '''
-            }
-        }
-
-        stage('Test') {
-            agent { label 'test-ai-agent' }
-            steps {
-                echo '🧪 Running tests with AI-powered fixing...'
-                script {
-                    // AI agent runs tests, detects failures,
-                    // analyzes with Gemini, applies fixes, and creates PR
+                echo '🔨 Running Python build/dependency install and generating build report...'
+                dir("${APP_DIR}") {
                     sh '''
-                        # Each stage runs in a different Jenkins agent container.
-                        # Install app dependencies here so pytest can import FastAPI modules.
-                        python3 -m pip install --upgrade pip
-                        python3 -m pip install -r requirements.txt -r requirements-dev.txt
+                        set -eu
 
-                        export WORKSPACE=$(pwd)
-                        python3 /agent/ai_test_fixer.py || true
+                        python3 -m venv .venv
+                        . .venv/bin/activate
+
+                        python -m pip install --upgrade pip setuptools wheel
+                        python -m pip install -r requirements.txt -r requirements-dev.txt
+
+                        mkdir -p "${REPORTS_DIR}"
+
+                        # Build report (standard Python metadata + dependency health)
+                        python -m pip list --format=json > "${REPORTS_DIR}/build-report.json"
+                        python -m pip check > "${REPORTS_DIR}/pip-check.txt"
+
+                        # Test reports (standard pytest outputs)
+                        # Allow exit code 1 (test failures) so remediation stage can run.
+                        set +e
+                        pytest -v \
+                          --junitxml="${REPORTS_DIR}/test-report.xml" \
+                          --cov=src \
+                          --cov-report=xml:"${REPORTS_DIR}/coverage.xml" \
+                          --cov-report=term-missing
+                        PYTEST_EXIT=$?
+                        set -e
+
+                        if [ "$PYTEST_EXIT" -ne 0 ] && [ "$PYTEST_EXIT" -ne 1 ]; then
+                          echo "pytest failed with unexpected exit code: $PYTEST_EXIT"
+                          exit "$PYTEST_EXIT"
+                        fi
                     '''
                 }
             }
         }
 
-        stage('Quality Analysis') {
-            agent { label 'quality-ai-agent' }
+                stage('Smart Check Test Report + Remediate') {
             steps {
-                echo '📊 Running quality analysis with AI-powered fixing...'
-                script {
-                    // AI agent runs ruff & bandit, detects issues,
-                    // analyzes with Gemini, applies fixes, and creates PR
+                echo '🤖 Checking test report and remediating when failures are detected...'
+                dir("${APP_DIR}") {
                     sh '''
-                        # Each stage runs in a different Jenkins agent container.
-                        # Install app + tooling deps required by quality analysis.
-                        python3 -m pip install --upgrade pip
-                        python3 -m pip install -r requirements.txt -r requirements-dev.txt
+                        set -e
+                        test -f "${REPORTS_DIR}/test-report.xml"
 
-                        export WORKSPACE=$(pwd)
-                        python3 /agent/ai_quality_fixer.py || true
+                        # Convert JUnit XML to normalized test-report.json expected by remediation runtime
+                        node /agent/unified-agent/dist/tooling/cli.js \
+                            --mode test \
+                            --technology python \
+                            --workspace "$(pwd)" \
+                            --report-input "${REPORTS_DIR}/test-report.xml" \
+                            --output "${REPORTS_DIR}/test-report.json"
+
+                        test -f "${REPORTS_DIR}/test-report.json"
+
+                        node /agent/unified-agent/dist/cli.js \
+                            --mode test \
+                            --report-file "${REPORTS_DIR}/test-report.json" \
+                            --output-file "${REPORTS_DIR}/test-remediation-result.json" \
+                            --workspace-dir "$(pwd)"
+                    '''
+                }
+            }
+        }
+
+        stage('Python Vulnerability/Quality Scan + Report') {
+            steps {
+                echo '🔍 Running vulnerability/quality scan and generating report...'
+                dir("${APP_DIR}") {
+                    sh '''
+                        set -eu
+
+                        python3 -m venv .venv
+                        . .venv/bin/activate
+
+                        python -m pip install --upgrade pip setuptools wheel
+                        python -m pip install -r requirements.txt -r requirements-dev.txt
+
+                        mkdir -p "${REPORTS_DIR}"
+
+                        node /agent/unified-agent/dist/tooling/cli.js \
+                            --mode quality \
+                            --technology python \
+                            --workspace "$(pwd)" \
+                            --output "${REPORTS_DIR}/quality-report.json"
+                    '''
+                }
+            }
+        }
+
+                stage('Smart Check Vulnerability Report + Remediate') {
+            steps {
+                echo '🤖 Checking vulnerability/quality report and remediating when thresholds are breached...'
+                dir("${APP_DIR}") {
+                    sh '''
+                        set -e
+                        test -f "${REPORTS_DIR}/quality-report.json"
+
+                        node /agent/unified-agent/dist/cli.js \
+                            --mode quality \
+                            --report-file "${REPORTS_DIR}/quality-report.json" \
+                            --output-file "${REPORTS_DIR}/quality-remediation-result.json" \
+                            --workspace-dir "$(pwd)"
                     '''
                 }
             }
         }
 
         stage('Deploy') {
-            agent { label 'build-agent' }
             when {
                 branch 'main'
                 expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
@@ -85,18 +150,20 @@ pipeline {
             echo '=' * 80
             echo 'Pipeline completed'
             echo '=' * 80
+            dir("${APP_DIR}") {
+                stash name: 'reports-files', includes: "${REPORTS_DIR}/**/*", allowEmpty: true
+            }
+            archiveArtifacts artifacts: "${REPORTS_DIR}/*.json,${REPORTS_DIR}/*.xml,${REPORTS_DIR}/*.txt", allowEmptyArchive: true
         }
         success {
             echo '✅ All stages completed successfully!'
-            echo 'Check GitHub for AI-generated PRs with fixes.'
         }
         failure {
             echo '❌ Pipeline failed'
             echo 'Check logs for details'
         }
         unstable {
-            echo '⚠️  Pipeline unstable - AI agents may have created PRs'
-            echo 'Review and merge the PRs to fix issues'
+            echo '⚠️  Pipeline unstable - review remediation reports in artifacts'
         }
     }
 }
