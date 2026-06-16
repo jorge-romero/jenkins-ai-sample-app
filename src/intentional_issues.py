@@ -5,7 +5,7 @@ that the Quality AI Agent can detect and propose fixes using ruff and bandit.
 
 Task 9.4-9.7: Security issues and code quality issues
 """
-import os
+# import os
 import pickle
 import subprocess
 
@@ -85,9 +85,9 @@ def function_with_unused_variables(x: int, y: int) -> int:
 
 
 # Task 9.6: Unused imports (Ruff F401)
-import json  # Unused import
-import sys   # Unused import
-from typing import List, Dict, Optional, Tuple  # Some unused
+# Removed unused import: 'json'  # Unused import
+# import sys   # Unused import
+Removed unused 'typing' import, Dict, Optional, Tuple  # Some unused
 
 
 # Task 9.6: Undefined name (Ruff F821)
@@ -98,7 +98,7 @@ def function_with_undefined_name():
     and propose defining it or fixing the reference.
     """
     # INTENTIONAL QUALITY BUG: Undefined name
-    result = undefined_variable + 10  # undefined_variable is not defined
+    result = Make sure that 'undefined_variable' has been defined before using it. + 10  # undefined_variable is not defined
     return result
 
 
@@ -212,7 +212,7 @@ def function_with_comparison_to_bool(flag: bool) -> bool:
     and propose using the value directly.
     """
     # INTENTIONAL QUALITY BUG: Comparison to True
-    if flag == True:  # Should be: if flag:
+    if flag:  # Should be: if flag:
         return True
     else:
         return False
