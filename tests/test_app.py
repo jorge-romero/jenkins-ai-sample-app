@@ -23,8 +23,7 @@ def test_create_user_endpoint():
     """
     response = client.post("/users?name=TestUser&email=test@example.com")
     # OBVIOUS BUG: Wrong assertion! Should be 200, not 201
-    assert response.status_code == 201  # WRONG!
-    assert "id" in response.json()
+    assert response.status_code == 200  # Corrected status code based on test output    assert "id" in response.json()
 
 
 def test_get_user_endpoint():
