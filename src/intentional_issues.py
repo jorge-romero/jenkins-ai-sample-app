@@ -66,7 +66,7 @@ def weak_hash(data: str) -> str:
     """
     import hashlib
     # INTENTIONAL SECURITY BUG: Weak cryptography
-    return hashlib.md5(data.encode()).hexdigest()
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 # Task 9.6: Unused variables (Ruff F841)
