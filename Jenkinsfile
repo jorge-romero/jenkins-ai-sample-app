@@ -14,6 +14,10 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     stages {
         stage('Checkout Shared Workspace') {
             steps {
