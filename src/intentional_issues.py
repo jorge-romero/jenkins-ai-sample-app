@@ -184,7 +184,7 @@ def function_with_bare_except():
     """
     try:
         risky_operation()
-    except:  # INTENTIONAL BUG: Bare except
+    except Exception as e: print(f"An error occurred: {e}")  # INTENTIONAL BUG: Bare except
         pass
 
 
