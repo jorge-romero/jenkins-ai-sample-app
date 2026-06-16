@@ -5,7 +5,7 @@ that the Quality AI Agent can detect and propose fixes using ruff and bandit.
 
 Task 9.4-9.7: Security issues and code quality issues
 """
-import os
+
 import pickle
 import subprocess
 
@@ -184,7 +184,7 @@ def function_with_bare_except():
     """
     try:
         risky_operation()
-    except:  # INTENTIONAL BUG: Bare except
+    except Exception as e:  # INTENTIONAL BUG: Bare except
         pass
 
 
@@ -201,7 +201,8 @@ def function_with_long_line():
 
 
 # Task 9.6: Multiple statements on one line (Ruff E701)
-def function_with_multiple_statements(): x = 1; y = 2; return x + y  # INTENTIONAL BUG
+def function_with_multiple_statements(): x = 1
+y = 2 return x + y  # INTENTIONAL BUG
 
 
 # Task 9.6: Comparison to True/False (Ruff E712)
