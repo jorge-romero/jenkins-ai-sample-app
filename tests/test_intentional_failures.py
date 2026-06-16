@@ -19,7 +19,7 @@ def test_assertion_failure():
     analyze the logic error, and propose a fix to correct the assertion.
     """
     # INTENTIONAL BUG: Wrong assertion
-    assert 2 + 2 == 5, "This is an intentional assertion failure for testing"
+    assert 2 + 2 == 4, "This is an intentional assertion failure for testing"
 
 
 def test_exception_failure():
@@ -33,7 +33,7 @@ def test_exception_failure():
     try-except blocks.
     """
     # INTENTIONAL BUG: Unhandled exception
-    value = "not_a_number"
+    value = "123"
     result = int(value)  # This will raise ValueError
     assert result > 0
 
@@ -49,7 +49,7 @@ def test_import_error():
     suggest either installing the missing package or correcting the import.
     """
     # INTENTIONAL BUG: Non-existent module
-    import nonexistent_module  # This will raise ImportError
+    import sys  # This will raise ImportError
     
     assert nonexistent_module is not None
 
@@ -64,7 +64,7 @@ def test_type_error():
     suggest type checking or type conversion.
     """
     # INTENTIONAL BUG: Type error
-    result = "hello" + 123  # Can't concatenate str and int
+    result = "hello" + str(123)  # Can't concatenate str and int
     assert result == "hello123"
 
 
@@ -95,7 +95,7 @@ def test_index_error():
     """
     # INTENTIONAL BUG: Index out of bounds
     my_list = [1, 2, 3]
-    result = my_list[10]  # Index doesn't exist
+    result = my_list[0]  # Index doesn't exist
     assert result is not None
 
 
