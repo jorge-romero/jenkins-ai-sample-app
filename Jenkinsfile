@@ -33,8 +33,8 @@ pipeline {
                     pip install -r requirements.txt
                                          pip install -r requirements-dev.txt
                      '''
-                 }
-             }
+                }
+            }
         }
 
         stage('Test → Remediate → Verify') {
@@ -44,51 +44,51 @@ pipeline {
 
                     retry(maxRetries) {
                         dir("${APP_DIR}") {
-                        // Determinar número de intento (retry no expone contador, lo calculamos con un archivo temporal)
-                        int attempt = sh(script: 'echo $(( $(cat .attempt 2>/dev/null || echo 0) + 1 )) | tee .attempt', returnStdout: true).trim().toInteger()
+                            // Determinar número de intento (retry no expone contador, lo calculamos con un archivo temporal)
+                            int attempt = sh(script: 'echo $(( $(cat .attempt 2>/dev/null || echo 0) + 1 )) | tee .attempt', returnStdout: true).trim().toInteger()
 
-                        int testExit = sh(
-                            script: """
+                            int testExit = sh(
+                            script: '''
                             set +e
                             . .venv/bin/activate
                             pytest -v --junitxml="${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
                                 --cov=src --cov-report=xml:"${REPORTS_DIR}/coverage-attempt-${attempt}.xml"
                             exit \$?
-                            """,
+                            ''',
                             returnStatus: true
                         )
 
-                        echo "Test exit code: ${testExit}"
+                            echo "Test exit code: ${testExit}"
 
-                        if (testExit == 0) {
-                            echo "Tests OK en intento ${attempt}. No remediation needed."
-                            sh 'rm -f .attempt' // limpiar contador
-                            return
-                        }
+                            if (testExit == 0) {
+                                echo "Tests OK en intento ${attempt}. No remediation needed."
+                                sh 'rm -f .attempt' // limpiar contador
+                                return
+                            }
 
-                        // Remediación
-                        sh(
-                            script: """
+                            // Remediación
+                            sh(
+                            script: '''
                             node /agent/unified-agent/dist/tooling/cli.js --mode test --technology python \
-                            --workspace "$(pwd)" --report-input "${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
+                            --workspace "\$(pwd)" --report-input "${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
                             --output "${REPORTS_DIR}/test-report-attempt-${attempt}.json"
 
                             NODE_ENV=test node /agent/unified-agent/dist/cli.js --mode test \
                             --report-file "${REPORTS_DIR}/test-report-attempt-${attempt}.json" \
                             --output-file "${REPORTS_DIR}/test-remediation-result-attempt-${attempt}.json" \
-                            --workspace-dir "$(pwd)"
-                            """
+                            --workspace-dir "\$(pwd)"
+                            '''
                         )
 
-                        // Forzar fallo para que retry() repita
-                        error "Intento ${attempt} fallido"
+                            // Forzar fallo para que retry() repita
+                            error "Intento ${attempt} fallido"
                         }
                     }
-                }
+                    }
             }
         }
 
-         stage('Quality → Remediate → Verify') {
+        stage('Quality → Remediate → Verify') {
                 steps {
                 script {
                     retry(
@@ -123,7 +123,7 @@ pipeline {
                         }
                     }
                 }
-            }
+                }
         }
 
         stage('Publish Remediation') {
