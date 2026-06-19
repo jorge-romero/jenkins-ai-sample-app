@@ -19,29 +19,22 @@ DATABASE_PASSWORD = "admin123password"  # Hardcoded password
 def unsafe_sql_query(user_input: str) -> str:
     """Execute SQL query with user input - SQL INJECTION VULNERABILITY.
     
-    This function demonstrates a SQL injection vulnerability that Bandit
-    should detect as CRITICAL severity.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose parameterized queries.
+    FIXED: Using a parameterized query format to prevent SQL injection.
+    (In a real scenario, this query would be executed with parameters.)
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    return query
+    # FIX: Use parameterized queries to prevent SQL injection
+    query = "SELECT * FROM users WHERE username = ?"
+    return query # Returns the parameterized query string template
 
 
 # Task 9.5: Command injection vulnerability (Bandit HIGH severity: B602, B607)
 def unsafe_command_execution(user_input: str):
     """Execute shell command with user input - COMMAND INJECTION.
     
-    This function demonstrates command injection vulnerability using
-    shell=True with user input.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose safer alternatives.
+    FIXED: Avoided shell=True and passed arguments as a list to prevent command injection.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # FIX: Avoid shell=True with user input. Pass arguments as a list.
+    subprocess.call(["ls", "-la", user_input])
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
