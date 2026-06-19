@@ -21,48 +21,73 @@ pipeline {
                 dir("${APP_DIR}") { sh 'mkdir -p ${REPORTS_DIR}' }
             }
         }
-
-        stage('Build → Test → Remediate → Verify') {
+        stage('Setup environment') {
             steps {
-                script {
-                    retry(
-                        count: (env.BUILD_REMEDIATION_RETRIES ?: '3') as Integer,
-                        conditions: [agent(), nonresumable()]
-                    ) {
+                dir("${APP_DIR}") {
+                    sh '''
+                    set -e
+                    mkdir -p "${REPORTS_DIR}"
+                    python -m venv .venv
+                    . .venv/bin/activate
+                    pip install --upgrade pip setuptools wheel
+                    pip install -r requirements.txt
+                                         pip install -r requirements-dev.txt
+                     '''
+                 }
+             }
+        }
+
+        stage('Test → Remediate → Verify') {
+            steps {
+                    script {
+                    int maxRetries = (env.BUILD_REMEDIATION_RETRIES ?: '3').toInteger()
+
+                    retry(maxRetries) {
                         dir("${APP_DIR}") {
-                            sh '''
-                                set -eu
-                                . .venv/bin/activate 2>/dev/null || :
-                                python3 -m venv .venv && . .venv/bin/activate
-                                python -m pip install -q --upgrade pip setuptools wheel
-                                python -m pip install -q -r requirements.txt -r requirements-dev.txt
+                        // Determinar número de intento (retry no expone contador, lo calculamos con un archivo temporal)
+                        int attempt = sh(script: 'echo $(( $(cat .attempt 2>/dev/null || echo 0) + 1 )) | tee .attempt', returnStdout: true).trim().toInteger()
 
-                                set +e; pytest -v --junitxml="${REPORTS_DIR}/test-report.xml" --cov=src --cov-report=xml:"${REPORTS_DIR}/coverage.xml"; TEST_EXIT=$?; set -e
-                                [ "$TEST_EXIT" -eq 0 ] && exit 0
+                        int testExit = sh(
+                            script: """
+                            set +e
+                            . .venv/bin/activate
+                            pytest -v --junitxml="${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
+                                --cov=src --cov-report=xml:"${REPORTS_DIR}/coverage-attempt-${attempt}.xml"
+                            exit \$?
+                            """,
+                            returnStatus: true
+                        )
 
-                                node /agent/unified-agent/dist/tooling/cli.js --mode test --technology python \
-                                    --workspace "$(pwd)" --report-input "${REPORTS_DIR}/test-report.xml" \
-                                    --output "${REPORTS_DIR}/test-report.json"
+                        echo "Test exit code: ${testExit}"
 
-                                NODE_ENV=test node /agent/unified-agent/dist/cli.js --mode test \
-                                    --report-file "${REPORTS_DIR}/test-report.json" \
-                                    --output-file "${REPORTS_DIR}/test-remediation-result.json" \
-                                    --workspace-dir "$(pwd)"
+                        if (testExit == 0) {
+                            echo "Tests OK en intento ${attempt}. No remediation needed."
+                            sh 'rm -f .attempt' // limpiar contador
+                            return
+                        }
 
-                                python -m pip install -q -r requirements.txt -r requirements-dev.txt
-                                set +e; pytest -v --junitxml="${REPORTS_DIR}/test-report.xml" --cov=src --cov-report=xml:"${REPORTS_DIR}/coverage.xml"; TEST_EXIT=$?; set -e
-                                [ "$TEST_EXIT" -eq 0 ] && exit 0
+                        // Remediación
+                        sh """
+                            node /agent/unified-agent/dist/tooling/cli.js --mode test --technology python \
+                            --workspace "$(pwd)" --report-input "${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
+                            --output "${REPORTS_DIR}/test-report-attempt-${attempt}.json"
 
-                                exit 1
-                            '''
+                            NODE_ENV=test node /agent/unified-agent/dist/cli.js --mode test \
+                            --report-file "${REPORTS_DIR}/test-report-attempt-${attempt}.json" \
+                            --output-file "${REPORTS_DIR}/test-remediation-result-attempt-${attempt}.json" \
+                            --workspace-dir "$(pwd)"
+                        """
+
+                        // Forzar fallo para que retry() repita
+                        error "Intento ${attempt} fallido"
                         }
                     }
                 }
             }
         }
 
-        stage('Quality → Remediate → Verify') {
-            steps {
+         stage('Quality → Remediate → Verify') {
+                steps {
                 script {
                     retry(
                         count: (env.BUILD_REMEDIATION_RETRIES ?: '3') as Integer,
