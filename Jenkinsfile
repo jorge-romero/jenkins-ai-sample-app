@@ -32,10 +32,11 @@ pipeline {
                         dir("${APP_DIR}") {
                             sh '''
                                 set -eu
-                                . .venv/bin/activate 2>/dev/null || :
-                                python3 -m venv .venv && . .venv/bin/activate
-                                python -m pip install -q --upgrade pip setuptools wheel
-                                python -m pip install -q -r requirements.txt -r requirements-dev.txt
+                                pip install --upgrade pip setuptools wheel
+                                python -m venv .venv
+                                . .venv/bin/activate
+                                pip install -r requirements.txt
+                                pip install -r requirements-dev.txt
 
                                 set +e; pytest -v --junitxml="${REPORTS_DIR}/test-report.xml" --cov=src --cov-report=xml:"${REPORTS_DIR}/coverage.xml"; TEST_EXIT=$?; set -e
                                 [ "$TEST_EXIT" -eq 0 ] && exit 0
