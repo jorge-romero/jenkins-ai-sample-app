@@ -69,16 +69,16 @@ pipeline {
                             // Remediación
                             sh(
                             script: '''
-                            node /agent/unified-agent/dist/tooling/cli.js --mode test --technology python \
-                            --workspace "\$(pwd)" --report-input "${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
-                            --output "${REPORTS_DIR}/test-report-attempt-${attempt}.json"
+                                node /agent/unified-agent/dist/tooling/cli.js --mode test --technology python \
+                                --workspace "\$(pwd)" --report-input "${REPORTS_DIR}/test-report-attempt-${attempt}.xml" \
+                                --output "${REPORTS_DIR}/test-report-attempt-${attempt}.json"
 
-                            NODE_ENV=test node /agent/unified-agent/dist/cli.js --mode test \
-                            --report-file "${REPORTS_DIR}/test-report-attempt-${attempt}.json" \
-                            --output-file "${REPORTS_DIR}/test-remediation-result-attempt-${attempt}.json" \
-                            --workspace-dir "\$(pwd)"
-                            '''
-                        )
+                                NODE_ENV=test node /agent/unified-agent/dist/cli.js --mode test \
+                                --report-file "${REPORTS_DIR}/test-report-attempt-${attempt}.json" \
+                                --output-file "${REPORTS_DIR}/test-remediation-result-attempt-${attempt}.json" \
+                                --workspace-dir "\$(pwd)"
+                                '''
+                            )
 
                             // Forzar fallo para que retry() repita
                             error "Intento ${attempt} fallido"
