@@ -16,7 +16,9 @@ DATABASE_PASSWORD = "admin123password"  # Hardcoded password
 
 
 # Task 9.5: SQL injection vulnerability (Bandit CRITICAL severity: B608)
-def unsafe_sql_query(user_input: str) -> str:
+from typing import Tuple
+
+def unsafe_sql_query(user_input: str) -> Tuple[str, Tuple[str]]: # Changed return type for parameterized query
     """Execute SQL query with user input - SQL INJECTION VULNERABILITY.
     
     This function demonstrates a SQL injection vulnerability that Bandit
@@ -25,9 +27,11 @@ def unsafe_sql_query(user_input: str) -> str:
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose parameterized queries.
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    return query
+    # INTENTIONAL SECURITY BUG: SQL injection vulnerability.
+    # Fixed by returning a parameterized query template and its parameters.
+    # This assumes the caller will use a safe database execution method.
+    query = "SELECT * FROM users WHERE username = ?"
+    return query, (user_input,) # Return a tuple of query string and parameters
 
 
 # Task 9.5: Command injection vulnerability (Bandit HIGH severity: B602, B607)
@@ -40,8 +44,10 @@ def unsafe_command_execution(user_input: str):
     Expected behavior: Quality AI Agent should detect this as high-severity
     security issue and propose safer alternatives.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # INTENTIONAL SECURITY BUG: Command injection.
+    # Fixed by avoiding shell=True and passing command arguments as a list.
+    # Further input validation/sanitization should be applied in production environments.
+    subprocess.call(["ls", "-la", user_input])
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
@@ -65,8 +71,9 @@ def weak_hash(data: str) -> str:
     and propose stronger alternatives like SHA-256.
     """
     import hashlib
-    # INTENTIONAL SECURITY BUG: Weak cryptography
-    return hashlib.md5(data.encode()).hexdigest()
+    # INTENTIONAL SECURITY BUG: Weak cryptography.
+    # Fixed by using a stronger hashing algorithm (SHA-256).
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 # Task 9.6: Unused variables (Ruff F841)
