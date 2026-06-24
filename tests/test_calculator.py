@@ -2,6 +2,7 @@
 
 BUG #5: Test that triggers division by zero bug!
 """
+import pytest
 from src.calculator import Calculator
 
 
@@ -33,10 +34,9 @@ def test_divide_by_zero():
     The test expects the function to work, but it will raise ZeroDivisionError.
     """
     calc = Calculator()
-    # OBVIOUS BUG: This will crash! The function doesn't handle b=0
-    result = calc.divide(10, 0)
-    # This assertion is never reached because exception is raised
-    assert result is not None
+    # Now, with the fix in src/calculator.py, this should raise ValueError
+    with pytest.raises(ValueError, match="Cannot divide by zero"):
+        calc.divide(10, 0)
 
 
 def test_get_first_n_items_normal():
