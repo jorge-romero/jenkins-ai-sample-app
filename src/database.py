@@ -35,9 +35,9 @@ class UserDatabase:
         BUG #1: SQL INJECTION VULNERABILITY
         This uses string formatting instead of parameterized queries!
         """
-        # VULNERABLE CODE - DO NOT USE IN PRODUCTION!
-        query = f"SELECT * FROM users WHERE id = {user_id}"
-        cursor = self.conn.execute(query)
+        # FIX: Using parameterized query to prevent SQL injection
+        query = "SELECT * FROM users WHERE id = ?"
+        cursor = self.conn.execute(query, (user_id,))
         row = cursor.fetchone()
         
         if row:
