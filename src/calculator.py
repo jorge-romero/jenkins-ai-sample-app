@@ -11,7 +11,9 @@ class Calculator:
         BUG #4: No zero division check!
         This will raise ZeroDivisionError when b=0
         """
-        return a / b  # OBVIOUS BUG: What if b is 0?
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return a / b
     
     def get_first_n_items(self, items: List[Any], n: int) -> List[Any]:
         """Get first N items from a list.

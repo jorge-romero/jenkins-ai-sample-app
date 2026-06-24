@@ -19,29 +19,36 @@ DATABASE_PASSWORD = "admin123password"  # Hardcoded password
 def unsafe_sql_query(user_input: str) -> str:
     """Execute SQL query with user input - SQL INJECTION VULNERABILITY.
     
-    This function demonstrates a SQL injection vulnerability that Bandit
-    should detect as CRITICAL severity.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose parameterized queries.
+    FIXED: Modified to use a placeholder for the user input, indicating
+    the need for parameterized queries when executing against a database.
+    Returns a conceptual parameterized query string.
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    return query
+    # FIXED SECURITY BUG: SQL injection vulnerability by using parameterized query concept
+    # In a real scenario, this query would be executed with a database driver
+    # that supports parameterized queries (e.g., cursor.execute("SELECT * FROM users WHERE username = ?", (user_input,)))
+    query = "SELECT * FROM users WHERE username = ?"
+    # Return a representation of the parameterized query for this example
+    return f"Conceptual Parameterized Query: {query}, Parameters: ('{user_input}',)"
 
 
 # Task 9.5: Command injection vulnerability (Bandit HIGH severity: B602, B607)
 def unsafe_command_execution(user_input: str):
     """Execute shell command with user input - COMMAND INJECTION.
     
-    This function demonstrates command injection vulnerability using
-    shell=True with user input.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose safer alternatives.
+    FIXED: Replaced subprocess.call with shell=True by a safer alternative.
+    It's best to pass commands as a list and avoid shell=True.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # FIXED SECURITY BUG: Command injection
+    # Safer alternative: pass command and arguments as a list.
+    # Consider validating user_input more strictly if it's meant to be a filename.
+    try:
+        # In a real application, user_input should be strictly validated or sanitized
+        # if it's expected to be a filename or a simple argument.
+        subprocess.run(["ls", "-la", user_input], check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with error: {e.stderr}")
+    except FileNotFoundError:
+        print("Command 'ls' not found. Ensure it's in PATH.")
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
@@ -61,12 +68,11 @@ def unsafe_deserialization(data: bytes):
 def weak_hash(data: str) -> str:
     """Hash data using weak MD5 algorithm.
     
-    Expected behavior: Quality AI Agent should detect weak cryptography
-    and propose stronger alternatives like SHA-256.
+    FIXED: Replaced MD5 with SHA-256 for stronger cryptography.
     """
     import hashlib
-    # INTENTIONAL SECURITY BUG: Weak cryptography
-    return hashlib.md5(data.encode()).hexdigest()
+    # FIXED SECURITY BUG: Stronger cryptography using SHA-256
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 # Task 9.6: Unused variables (Ruff F841)
