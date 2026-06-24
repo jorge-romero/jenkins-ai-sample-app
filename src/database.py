@@ -32,12 +32,11 @@ class UserDatabase:
     def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID.
         
-        BUG #1: SQL INJECTION VULNERABILITY
-        This uses string formatting instead of parameterized queries!
+        FIXED: Parameterized queries prevent SQL injection.
         """
-        # VULNERABLE CODE - DO NOT USE IN PRODUCTION!
-        query = f"SELECT * FROM users WHERE id = {user_id}"
-        cursor = self.conn.execute(query)
+        # Using parameterized query to prevent SQL injection
+        query = "SELECT * FROM users WHERE id = ?"
+        cursor = self.conn.execute(query, (user_id,))
         row = cursor.fetchone()
         
         if row:

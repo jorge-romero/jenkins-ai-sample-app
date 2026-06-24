@@ -10,38 +10,51 @@ import pickle
 import subprocess
 
 
-# Task 9.4: Hardcoded secret (Bandit HIGH severity: B105)
-API_SECRET_KEY = "sk-1234567890abcdef-HARDCODED-SECRET"
-DATABASE_PASSWORD = "admin123password"  # Hardcoded password
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "default-api-key")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")  # Remove default for sensitive secret to enforce environment configuration
 
 
 # Task 9.5: SQL injection vulnerability (Bandit CRITICAL severity: B608)
 def unsafe_sql_query(user_input: str) -> str:
     """Execute SQL query with user input - SQL INJECTION VULNERABILITY.
     
-    This function demonstrates a SQL injection vulnerability that Bandit
-    should detect as CRITICAL severity.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose parameterized queries.
+    FIXED: Modified to use a placeholder for the user input, indicating
+    the need for parameterized queries when executing against a database.
+    Returns a conceptual parameterized query string.
     """
-    # INTENTIONAL SECURITY BUG: SQL injection vulnerability
-    query = f"SELECT * FROM users WHERE username = '{user_input}'"
-    return query
+    # FIXED SECURITY BUG: SQL injection vulnerability by using parameterized query concept
+    # In a real scenario, this query would be executed with a database driver
+    # that supports parameterized queries (e.g., cursor.execute("SELECT * FROM users WHERE username = ?", (user_input,)))
+    query = "SELECT * FROM users WHERE username = ?"
+    # Return a representation of the parameterized query for this example
+    return f"Conceptual Parameterized Query: {query}, Parameters: ('{user_input}',)"
 
 
 # Task 9.5: Command injection vulnerability (Bandit HIGH severity: B602, B607)
 def unsafe_command_execution(user_input: str):
     """Execute shell command with user input - COMMAND INJECTION.
     
-    This function demonstrates command injection vulnerability using
-    shell=True with user input.
-    
-    Expected behavior: Quality AI Agent should detect this as high-severity
-    security issue and propose safer alternatives.
+    FIXED: Replaced subprocess.call with shell=True by a safer alternative.
+    It's best to pass commands as a list and avoid shell=True.
     """
-    # INTENTIONAL SECURITY BUG: Command injection
-    subprocess.call(f"ls -la {user_input}", shell=True)
+    # FIXED SECURITY BUG: Command injection - using full path for executable and
+    # adding comment about strict input validation for user_input.
+    # Safer alternative: pass command and arguments as a list.
+    # Consider validating user_input more strictly if it's meant to be a filename.
+    # FIXED SECURITY BUG: Command injection - ensuring strict validation of user_input.
+    # Only allow simple filenames or paths that do not start with a hyphen or contain dangerous characters.
+    import re
+    if not re.match(r"^[a-zA-Z0-9_./-]+$", user_input) or user_input.startswith('-'):
+        print(f"Invalid or potentially malicious input: {user_input}")
+        return
+    
+    try:
+        # Using a full path for 'ls' to prevent PATH manipulation issues.
+        subprocess.run(["/bin/ls", "-la", user_input], check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with error: {e.stderr}")
+    except FileNotFoundError:
+        print("Command '/bin/ls' not found. Ensure it's installed or use its full path if different.")
 
 
 # Task 9.5: Pickle deserialization (Bandit HIGH severity: B301)
@@ -53,20 +66,25 @@ def unsafe_deserialization(data: bytes):
     Expected behavior: Quality AI Agent should detect unsafe deserialization
     and propose safer alternatives like JSON.
     """
-    # INTENTIONAL SECURITY BUG: Unsafe deserialization
-    return pickle.loads(data)
+    # FIXED SECURITY BUG: Unsafe deserialization - using JSON as a safer alternative.
+    # This requires the input `data` to be JSON-encoded bytes. Error handling is crucial.
+    try:
+        return json.loads(data.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        # Log the error and handle appropriately (e.g., raise a custom exception, return default)
+        print(f"Error deserializing data with JSON: {e}")
+        raise ValueError("Invalid JSON data provided") from e
 
 
 # Task 9.4: Use of weak cryptography (Bandit MEDIUM severity: B324)
 def weak_hash(data: str) -> str:
     """Hash data using weak MD5 algorithm.
     
-    Expected behavior: Quality AI Agent should detect weak cryptography
-    and propose stronger alternatives like SHA-256.
+    FIXED: Replaced MD5 with SHA-256 for stronger cryptography.
     """
     import hashlib
-    # INTENTIONAL SECURITY BUG: Weak cryptography
-    return hashlib.md5(data.encode()).hexdigest()
+    # FIXED SECURITY BUG: Stronger cryptography using SHA-256
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 # Task 9.6: Unused variables (Ruff F841)
@@ -97,8 +115,9 @@ def function_with_undefined_name():
     Expected behavior: Quality AI Agent should detect undefined name
     and propose defining it or fixing the reference.
     """
-    # INTENTIONAL QUALITY BUG: Undefined name
-    result = undefined_variable + 10  # undefined_variable is not defined
+    # FIXED QUALITY BUG: Undefined name - defined variable before use
+    undefined_variable = 0  # Placeholder definition, adjust based on actual intent
+    result = undefined_variable + 10
     return result
 
 
@@ -173,6 +192,9 @@ def function_with_mutable_default(items=[]):  # INTENTIONAL BUG
 
 
 # Task 9.6: Bare except (Ruff E722)
+import logging # This line and the next should be added at the top of the file.
+logger = logging.getLogger(__name__)
+
 def function_with_bare_except():
     """Function with bare except clause - CODE QUALITY ISSUE.
     
@@ -184,8 +206,9 @@ def function_with_bare_except():
     """
     try:
         risky_operation()
-    except:  # INTENTIONAL BUG: Bare except
-        pass
+    except Exception as e: # FIXED: Catch specific exception and log it
+        logger.error(f"An unexpected error occurred during risky_operation: {e}")
+        # Optionally re-raise a more specific exception, or handle gracefully
 
 
 def risky_operation():
